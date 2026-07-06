@@ -92,7 +92,7 @@ const Login = () => {
                             <Label className="text-slate-700 font-semibold">I am logging in as:</Label>
                             <RadioGroup value={role} onValueChange = {setRole} classname="flex space-x-4">
                                 <div className="flex items-center space-x-2">
-                                    <RadioGroupItem value="patient" id="patient" />
+                                 <RadioGroupItem value="patient" id="patient" />
                                     <Label htmlFor="patient" className="cursor-pointer">Patient</Label>
                                 </div>
 
