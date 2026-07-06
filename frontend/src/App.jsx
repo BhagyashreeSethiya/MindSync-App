@@ -2,16 +2,16 @@ import React from "react";
 //Navigate import kiya h redirection k liye
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
-import Home from "./pages/Home";
-import Login from "./pages/Login"; // Login page import kiya
-import Navbar from "./components/Navbar";
+
+import Login from "./pages/Login"; 
+
 
 const ProtectedRoute = ({ children }) => {
     const isAuthenticated = localStorage.getItem("isAuthenticated");
 
     // Agar logged in hai toh page dikhao (children), warna Login par bhej do
     if(!isAuthenticated){
-        return <Navigate to="/login" />
+        return <Navigate to="/login" replace />
     }
     return children;
 };
@@ -21,7 +21,7 @@ function App() {
         <BrowserRouter>
         <Navbar />
         <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
 
             {/* Proctected Route (Sirf Admin dekh sakta hai)*/}
