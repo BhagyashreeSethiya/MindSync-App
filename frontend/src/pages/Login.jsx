@@ -49,8 +49,8 @@ const Login = () => {
     };
         
     return (
-        <div className="flex items-center justify-center mih-h-screen bg-slate-50">
-            <Card className="w-400 shadow-lg border-slate-200">
+        <div className="flex items-center justify-center mih-h-[80vh] bg-slate-50 px-4">
+            <Card className="w-full max-w-md shadow-lg border-slate-200">
                 <CardHeader className="text-center">
                     <CardTitle className="text-2xl font-bold text-slate-800">Welcome Back</CardTitle>
                     <CardDescription className="text-slate-500">Sign in to your wellness account</CardDescription>
