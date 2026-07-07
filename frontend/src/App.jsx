@@ -1,9 +1,13 @@
 import React from "react";
-//Navigate import kiya h redirection k liye
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
-
 import Login from "./pages/Login"; 
+
+import Signup  from "./pages/SignUp";
+import ForgotPassword from "./pages/ForgotPassword";
+import VerifyEmail from "./pages/VerifyEmail";
+import ResetPassword from "./pages/ResetPassword";
+
 
 
 const ProtectedRoute = ({ children }) => {
@@ -24,6 +28,11 @@ function App() {
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
 
+            {/* Public Authentication flow routes */}
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/verify-email" element={<VerifyEmail />}/>
+            <Route path="/reset-password" element={<ResetPassword />} />
             {/* Proctected Route (Sirf Admin dekh sakta hai)*/}
             <Route 
                 path="/dashboard"
@@ -33,6 +42,8 @@ function App() {
                     </ProtectedRoute>
                 }
                 />
+                {/* Fallback route: agar user koi gaalt URL daalta hai toh wapas login p bhej do */}
+                <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
         </BrowserRouter>
     );
