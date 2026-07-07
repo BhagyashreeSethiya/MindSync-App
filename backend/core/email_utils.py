@@ -21,7 +21,7 @@ conf = ConnectionConfig(
 
 async def send_verification_email(email_to: EmailStr, user_name: str, token:str):
 
-    verify_url = f"http://localhost:8000/auth/verify-email?token={token}"
+    verify_url = f"http://localhost:5173/verify-email?token={token}"
     
     html_content = f"""
     <h2>Hello {user_name},</h2>
