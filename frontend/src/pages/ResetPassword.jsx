@@ -14,7 +14,7 @@ const ResetPassword = () => {
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const [loading, setLoading] = use(false);
+    const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState({ type: "", text: ""});
     const [resetSuccess, setResetSuccess] = useState(false);
 

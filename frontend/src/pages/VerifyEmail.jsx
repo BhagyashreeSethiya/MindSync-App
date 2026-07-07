@@ -31,7 +31,7 @@ const VerifyEmail = () => {
                 const data = await response.json();
 
                 if(response.ok){
-                    setStatus("Success");
+                    setStatus("success");
                     setMessage("✅ Email verified successfully!");
 
                     //2.5 sec baad automaticall login p behej dte h
@@ -51,7 +51,7 @@ const VerifyEmail = () => {
     }, [token, navigate]);
 
     return (
-        <div className="mih-h-screen flex items-center justify-center bg-slate-50 px-4">
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
             <Card className="w-full max-w-sm shadow-xl border-slate-200 bg-white text-center">
                 <CardHeader>
                     <CardTitle className="text-2xl font-bold">{message}</CardTitle>
