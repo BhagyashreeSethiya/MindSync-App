@@ -56,7 +56,7 @@ const Signup = () => {
     };
 
     return (
-        <div className="min-h-scrren flex items-center justify-center bg-slate-50 px-4">
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
             <Card className="w-full max-w-md shadow-xl border-slate-200 bg-white">
                 <CardHeader className="text-center pb-4">
                     <CardTitle className="text-2xl font-bold text-slate-800">Create Account</CardTitle>
