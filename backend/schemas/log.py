@@ -9,6 +9,7 @@ class CaretakerLogResponse(BaseModel):
     ai_reply:str
     emotion:str
     alert:bool
+    patient_name: str
     timestamp: datetime
 
     class Config:
@@ -21,6 +22,7 @@ class CaretakerAlertResponse(BaseModel):
     user_id: int
     emotion: str
     message: str
+    patient_name: str
     timestamp: datetime
 
     class Config:
