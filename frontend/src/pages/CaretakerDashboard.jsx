@@ -15,7 +15,7 @@ const CaretakerDashboard = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  const beepSound = useRef( new Audio('/beep.mp3'));
+  const beepSound = useRef( new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg'));
 
   //1. Auto-Suggest API call (jab user type karta hai)
   useEffect(() => {
@@ -65,7 +65,7 @@ const CaretakerDashboard = () => {
           if (newAlerts.length > 0) {
             setNotifications((prev) => {
               if (newAlerts.length > prev.length){
-                beepSound.current.play().catch(e => console.log(e));
+                beepSound.current.play().catch(e => console.log("Sound play blocked by browser:",e));
               }
               return newAlerts;
             });
