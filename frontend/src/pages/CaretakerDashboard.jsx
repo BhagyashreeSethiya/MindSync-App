@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useMemo } from "react";
 import { Search, Bell, AlertCircle, User as UserIcon, LogOut} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
-    ChartConfig,
+    
     ChartContainer,
     ChartTooltip,
     ChartTooltipContent,
@@ -264,7 +264,7 @@ const CaretakerDashboard = () => {
                                 Mood Analytics: {selectedPatientName}
                             </h3>
                            {chartData.length > 0 ? (
-                            <ChartContainer config={chartConfig} className="mih-h-[200px] w-full">
+                            <ChartContainer config={chartConfig} className="min-h-50 w-full">
                                 <BarChart accessibilityLayer data={chartData}>
                                     <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-slate-200" />
                                     <XAxis 
