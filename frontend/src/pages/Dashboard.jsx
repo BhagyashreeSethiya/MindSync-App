@@ -1,15 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { MessageSquare, Music, LogOut, Sparkles, Activity, Heart } from "lucide-react";
+import { MessageSquare, Music, LogOut, Sparkles, Activity, Heart, Check, X } from "lucide-react";
 import SpeechInput from "../components/SpeechInput"; 
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("chat"); 
   const [selectedMood, setSelectedMood] = useState(null);
-  const [activeVibe, setActiveVibe] = useState(null); // Dynamic track aur dynamic animation ke liye
+  const [activeVibe, setActiveVibe] = useState(null); 
   
-  // AI Chat State 
+  // --- NEW STATES FOR API FLOW ---
+  const [currentLogId, setCurrentLogId] = useState(null); // Backend se aane wali log_id store karne ke liye
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+
+  // --- AI Chat State ---
   const [messages, setMessages] = useState([]);
   const [isThinking, setIsThinking] = useState(false);
   
@@ -21,7 +26,7 @@ const Dashboard = () => {
     messageEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isThinking]);
 
-  // SMART AUDIO CONTROLLER: Chat tab aate hi background music aur speech band
+  // SMART AUDIO CONTROLLER
   useEffect(() => {
     if (activeTab === "chat") {
       window.speechSynthesis.cancel(); 
@@ -75,7 +80,6 @@ const Dashboard = () => {
     navigate("/login");
   };
 
-  // DYNAMIC AUDIO + DYNAMIC ANIMATION SLOTS
   const moodSettings = {
     sad: {
       bg: "bg-gradient-to-br from-amber-50 to-orange-100",
@@ -129,12 +133,76 @@ const Dashboard = () => {
     }
   };
 
-  // RANDOM PICKER FUNCTION (Selects both unique Audio and unique Animation layout dynamically)
-  const handleMoodSelect = (mood) => {
+  // 🚀 INTEGRATION 1: ASYNC MOOD SELECT & QUICK RELIEF LOGGER
+  const handleMoodSelect = async (mood) => {
     setSelectedMood(mood);
+    setFeedbackSubmitted(false); // Naye mood par feedback reset karenge
+    
     const availableVibes = moodSettings[mood].vibes;
     const randomVibe = availableVibes[Math.floor(Math.random() * availableVibes.length)];
     setActiveVibe(randomVibe);
+
+    // Backend hit karke sensory therapy session log karenge
+    try {
+      const token = localStorage.getItem("access_token");
+      const response = await fetch("http://localhost:8000/quick-relief", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          emotion: mood,
+          therapy_used: randomVibe.musicTitle
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // FAANG Architecture Check: Agar backend dynamic ID de raha hai toh save karo
+        if (data.log_id) {
+          setCurrentLogId(data.log_id);
+        } else {
+          // Fallback: Agar log_id nahi hai toh hum temporary verify karne ke liye console log ya state set kar sakte hain
+          console.log("Logged successfully:", data.message);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to create quick relief log:", error);
+    }
+  };
+
+  // 🚀 INTEGRATION 2: PATCH FEEDBACK HANDLER
+  const handleFeedbackSubmit = async (isHelpful, skippedMedicine) => {
+    if (!currentLogId) {
+      alert("No active therapy log session found to give feedback on.");
+      return;
+    }
+
+    setFeedbackLoading(true);
+    try {
+      const token = localStorage.getItem("access_token");
+      const response = await fetch("http://localhost:8000/feedback", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          log_id: currentLogId,
+          is_helpful: isHelpful,
+          skipped_medicine: skippedMedicine
+        })
+      });
+
+      if (response.ok) {
+        setFeedbackSubmitted(true);
+      }
+    } catch (error) {
+      console.error("Feedback submission failed:", error);
+    } finally {
+      setFeedbackLoading(false);
+    }
   };
 
   // Automatically load and play new stream when state updates
@@ -287,6 +355,60 @@ const Dashboard = () => {
                     <span className="text-[11px] text-slate-400 block mt-1">Playing ambient vibe...</span>
                   </div>
                 </div>
+
+                {/* 🌟 NEW UX INTERACTION: FAANG LEVEL SENSORY FEEDBACK PANEL */}
+                <div className="border-t border-slate-100 pt-4 mt-2 text-left space-y-3">
+                  {feedbackSubmitted ? (
+                    <div className="bg-emerald-50 text-emerald-700 text-xs font-semibold p-3 rounded-xl flex items-center gap-2 border border-emerald-100">
+                      <Check size={16} />
+                      <span>Feedback recorded safely. Great job maintaining your health!</span>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider text-center">Quick Evaluation</p>
+                      <div className="flex flex-col gap-2">
+                        <label className="text-xs font-medium text-slate-600">Did this sound track help calm you down?</label>
+                        <div className="flex gap-2">
+                          <button 
+                            disabled={feedbackLoading}
+                            onClick={() => handleFeedbackSubmit(true, false)}
+                            className="flex-1 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-600 border border-slate-200 hover:border-emerald-200 text-slate-700 rounded-xl py-2 px-3 text-xs font-medium transition-all flex items-center justify-center gap-1"
+                          >
+                            Yes, it helped
+                          </button>
+                          <button 
+                            disabled={feedbackLoading}
+                            onClick={() => handleFeedbackSubmit(false, false)}
+                            className="flex-1 bg-slate-50 hover:bg-rose-50 hover:text-rose-600 border border-slate-200 hover:border-rose-200 text-slate-700 rounded-xl py-2 px-3 text-xs font-medium transition-all flex items-center justify-center gap-1"
+                          >
+                            Not really
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 flex items-center justify-between bg-amber-50/50 p-2.5 rounded-xl border border-amber-100/60">
+                        <span className="text-xs font-medium text-slate-600">Did you skip any prescribed medicine today?</span>
+                        <div className="flex gap-1.5">
+                          <button 
+                            disabled={feedbackLoading}
+                            onClick={() => handleFeedbackSubmit(true, true)}
+                            className="bg-white hover:bg-amber-500 hover:text-white border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
+                          >
+                            Yes
+                          </button>
+                          <button 
+                            disabled={feedbackLoading}
+                            onClick={() => handleFeedbackSubmit(true, false)}
+                            className="bg-white hover:bg-slate-800 hover:text-white border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
+                          >
+                            No
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
               </div>
             ) : (
               <div className="text-slate-400 italic text-sm pt-8">
