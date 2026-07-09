@@ -10,9 +10,13 @@ const Dashboard = () => {
   const [activeVibe, setActiveVibe] = useState(null); 
   
   // --- NEW STATES FOR API FLOW ---
-  const [currentLogId, setCurrentLogId] = useState(null); // Backend se aane wali log_id store karne ke liye
+  const [currentLogId, setCurrentLogId] = useState(null); // Backend se aane wali log_id
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
+  
+  // --- LOCAL STATES FOR 2-STEP FEEDBACK ---
+  const [evalHelpful, setEvalHelpful] = useState(null);
+  const [evalMedicine, setEvalMedicine] = useState(null);
 
   // --- AI Chat State ---
   const [messages, setMessages] = useState([]);
@@ -136,7 +140,9 @@ const Dashboard = () => {
   // 🚀 INTEGRATION 1: ASYNC MOOD SELECT & QUICK RELIEF LOGGER
   const handleMoodSelect = async (mood) => {
     setSelectedMood(mood);
-    setFeedbackSubmitted(false); // Naye mood par feedback reset karenge
+    setFeedbackSubmitted(false); // Reset feedback status
+    setEvalHelpful(null);        // Reset Q1
+    setEvalMedicine(null);       // Reset Q2
     
     const availableVibes = moodSettings[mood].vibes;
     const randomVibe = availableVibes[Math.floor(Math.random() * availableVibes.length)];
@@ -145,7 +151,7 @@ const Dashboard = () => {
     // Backend hit karke sensory therapy session log karenge
     try {
       const token = localStorage.getItem("access_token");
-      const response = await fetch("http://localhost:8000/quick-relief", {
+      const response = await fetch("http://localhost:8000/chat/quick-relief", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -159,12 +165,17 @@ const Dashboard = () => {
 
       if (response.ok) {
         const data = await response.json();
-        // FAANG Architecture Check: Agar backend dynamic ID de raha hai toh save karo
+        console.log("Backend response data:", data);
+
+        // 🛠️ FIX APPLIED HERE: Checking for both log_id and id
         if (data.log_id) {
           setCurrentLogId(data.log_id);
+          console.log("Log ID set to (from log_id):", data.log_id);
+        } else if (data.id) {
+          setCurrentLogId(data.id);
+          console.log("Log ID set to (from id):", data.id);
         } else {
-          // Fallback: Agar log_id nahi hai toh hum temporary verify karne ke liye console log ya state set kar sakte hain
-          console.log("Logged successfully:", data.message);
+          console.warn("⚠️ Backend ne koi ID return nahi ki! Data:", data);
         }
       }
     } catch (error) {
@@ -182,7 +193,7 @@ const Dashboard = () => {
     setFeedbackLoading(true);
     try {
       const token = localStorage.getItem("access_token");
-      const response = await fetch("http://localhost:8000/feedback", {
+      const response = await fetch("http://localhost:8000/chat/feedback", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -262,7 +273,7 @@ const Dashboard = () => {
       </div>
 
       {/* MAIN CONTENT CONTAINER */}
-      <div className="flex-1 flex flex-col overflow-hidden relative justify-center items-center p-6">
+      <div className="flex-1 flex flex-col overflow-y-auto relative justify-start items-center p-6 scrollbar-thin">
         
         {/* TAB 1: AI COMPANION COACH */}
         {activeTab === "chat" && (
@@ -337,7 +348,6 @@ const Dashboard = () => {
                     {activeVibe.text}
                   </span>
                   
-                  {/* FAANG HIGHLIGHT: DYNAMIC COMPONENT ANIMATION */}
                   <div className={`w-32 h-32 rounded-full ${moodSettings[selectedMood].color} opacity-40 flex items-center justify-center text-white font-bold transition-all duration-500 ${activeVibe.animation}`}>
                     <Activity size={36} />
                   </div>
@@ -356,7 +366,7 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* 🌟 NEW UX INTERACTION: FAANG LEVEL SENSORY FEEDBACK PANEL */}
+                {/* 🌟 UX INTERACTION: TWO-STEP FEEDBACK PANEL */}
                 <div className="border-t border-slate-100 pt-4 mt-2 text-left space-y-3">
                   {feedbackSubmitted ? (
                     <div className="bg-emerald-50 text-emerald-700 text-xs font-semibold p-3 rounded-xl flex items-center gap-2 border border-emerald-100">
@@ -366,45 +376,65 @@ const Dashboard = () => {
                   ) : (
                     <>
                       <p className="text-[11px] text-slate-400 uppercase font-bold tracking-wider text-center">Quick Evaluation</p>
+                      
+                      {/* Question 1: Is Helpful? */}
                       <div className="flex flex-col gap-2">
                         <label className="text-xs font-medium text-slate-600">Did this sound track help calm you down?</label>
                         <div className="flex gap-2">
                           <button 
-                            disabled={feedbackLoading}
-                            onClick={() => handleFeedbackSubmit(true, false)}
-                            className="flex-1 bg-slate-50 hover:bg-emerald-50 hover:text-emerald-600 border border-slate-200 hover:border-emerald-200 text-slate-700 rounded-xl py-2 px-3 text-xs font-medium transition-all flex items-center justify-center gap-1"
+                            onClick={() => setEvalHelpful(true)}
+                            className={`flex-1 rounded-xl py-2 px-3 text-xs font-medium transition-all flex items-center justify-center gap-1 border ${
+                              evalHelpful === true ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-emerald-50'
+                            }`}
                           >
                             Yes, it helped
                           </button>
                           <button 
-                            disabled={feedbackLoading}
-                            onClick={() => handleFeedbackSubmit(false, false)}
-                            className="flex-1 bg-slate-50 hover:bg-rose-50 hover:text-rose-600 border border-slate-200 hover:border-rose-200 text-slate-700 rounded-xl py-2 px-3 text-xs font-medium transition-all flex items-center justify-center gap-1"
+                            onClick={() => setEvalHelpful(false)}
+                            className={`flex-1 rounded-xl py-2 px-3 text-xs font-medium transition-all flex items-center justify-center gap-1 border ${
+                              evalHelpful === false ? 'bg-rose-500 text-white border-rose-600 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-rose-50'
+                            }`}
                           >
                             Not really
                           </button>
                         </div>
                       </div>
 
+                      {/* Question 2: Skipped Medicine? */}
                       <div className="pt-2 flex items-center justify-between bg-amber-50/50 p-2.5 rounded-xl border border-amber-100/60">
                         <span className="text-xs font-medium text-slate-600">Did you skip any prescribed medicine today?</span>
                         <div className="flex gap-1.5">
                           <button 
-                            disabled={feedbackLoading}
-                            onClick={() => handleFeedbackSubmit(true, true)}
-                            className="bg-white hover:bg-amber-500 hover:text-white border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
+                            onClick={() => setEvalMedicine(true)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                              evalMedicine === true ? 'bg-amber-500 text-white border-amber-600 shadow-sm' : 'bg-white text-slate-700 border-slate-200 hover:bg-amber-100'
+                            }`}
                           >
                             Yes
                           </button>
                           <button 
-                            disabled={feedbackLoading}
-                            onClick={() => handleFeedbackSubmit(true, false)}
-                            className="bg-white hover:bg-slate-800 hover:text-white border border-slate-200 text-slate-700 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all"
+                            onClick={() => setEvalMedicine(false)}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${
+                              evalMedicine === false ? 'bg-slate-800 text-white border-slate-900 shadow-sm' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                            }`}
                           >
                             No
                           </button>
                         </div>
                       </div>
+
+                      {/* Final Submit Button */}
+                      <button
+                        disabled={evalHelpful === null || evalMedicine === null || feedbackLoading}
+                        onClick={() => handleFeedbackSubmit(evalHelpful, evalMedicine)}
+                        className={`w-full py-2.5 mt-3 rounded-xl text-xs font-bold transition-all ${
+                          evalHelpful !== null && evalMedicine !== null
+                            ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
+                            : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        }`}
+                      >
+                        {feedbackLoading ? 'Submitting...' : 'Submit Feedback'}
+                      </button>
                     </>
                   )}
                 </div>
