@@ -1,30 +1,23 @@
-import React from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Dashboard from "./pages/CaretakerDashboard";
-import Login from "./pages/Login"; 
 
+import { BrowserRouter as Router, Routes, Route, Navigate} from "react-router-dom";
+
+//pages imports
+import CaretakerDashboard from "./pages/CaretakerDashboard";
+import Login from "./pages/Login"; 
 import Signup  from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword";
 import VerifyEmail from "./pages/VerifyEmail";
 import ResetPassword from "./pages/ResetPassword";
 
-
-
-const ProtectedRoute = ({ children }) => {
-    const isAuthenticated = localStorage.getItem("isAuthenticated");
-
-    // Agar logged in hai toh page dikhao (children), warna Login par bhej do
-    if(!isAuthenticated){
-        return <Navigate to="/login" replace />
-    }
-    return children;
-};
+// Components
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
     return (
-        <BrowserRouter>
+        <Router>
         
         <Routes>
+            {/* Default redirect to Login */}
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
 
@@ -33,19 +26,22 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/verify-email" element={<VerifyEmail />}/>
             <Route path="/reset-password" element={<ResetPassword />} />
-            {/* Proctected Route (Sirf Admin dekh sakta hai)*/}
-            <Route 
-                path="/dashboard"
+
+           {/* Protected Route: Sirf Caretaker k liye */}
+           <Route
+                path="/caretaker-dashboard"
                 element={
-                    <ProtectedRoute>
-                        <Dashboard />
+                    <ProtectedRoute allowedRole="care_taker">
+                            <CaretakerDashboard />
                     </ProtectedRoute>
                 }
-                />
+            />
                 {/* Fallback route: agar user koi gaalt URL daalta hai toh wapas login p bhej do */}
                 <Route path="*" element={<Navigate to="/login" replace />} />
+
+                
         </Routes>
-        </BrowserRouter>
+        </Router>
     );
 }
 
