@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/chart"
 
 //raw recharts (dhancha bananae k liye)
-import { Bar, BarChart, CartesianGrid, XAxis} from "recharts"
+import { Bar, BarChart, CartesianGrid, XAxis, Rectangle} from "recharts"
 
 
 const CaretakerDashboard = () => {
@@ -26,6 +26,21 @@ const CaretakerDashboard = () => {
 
   const beepSound = useRef( new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg'));
 
+  // Helper Function: UTC time ko IST (Local Time) mein sahi se convert karne ke liye
+  const formatToLocalTime = (timestampString) => {
+    if (!timestampString) return "";
+    // Agar string mein timezone indicator nahi hai toh 'Z' (UTC) append karo
+    const safeTimestamp = (typeof timestampString === 'string' && !timestampString.includes('Z') && !timestampString.includes('+'))
+      ? `${timestampString}Z`
+      : timestampString;
+
+    return new Date(safeTimestamp).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
   //1. Auto-Suggest API call (jab user type karta hai)
   useEffect(() => {
     const fetchSuggestions = async () => {
@@ -36,7 +51,7 @@ const CaretakerDashboard = () => {
       }
 
       try {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("access_token");
         const response = await fetch(`http://localhost:8000/logs/search-patients?q=${searchQuery}`, {
             headers: { "Authorization": `Bearer ${token}`}
         });
@@ -62,7 +77,7 @@ const CaretakerDashboard = () => {
   useEffect(() => {
     const pollNotifications = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("access_token");
         if(!token) return;
 
         const response = await fetch("http://localhost:8000/logs/active-alerts", {
@@ -98,7 +113,7 @@ const CaretakerDashboard = () => {
     setShowDropdown(false); // dropdown band krdo
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("access_token");
       const response = await fetch(`http://localhost:8000/logs/patient/${patientId}`, {
         headers: { "Authorization": `Bearer ${token}`}
       });
@@ -131,7 +146,7 @@ const CaretakerDashboard = () => {
     if(!confirmLogout) return;
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("access_token");
       const refreshToken = localStorage.getItem("refresh_token");
 
       // backend blacklist API call
@@ -147,14 +162,13 @@ const CaretakerDashboard = () => {
       console.error("Error during logout:", error);
     } finally {
       // Local storage clear karna aur login page par redirect karna
-      localStorage.removeItem("token");
+      localStorage.removeItem("access_token");
       localStorage.removeItem("refresh_token");
       navigate("/login");
     }
   };
 
-  // 6. Chart 
-  // 6.1 Data Generator
+  // 6. Chart Data Processor with Beautiful Dynamic Colors
   const chartData = useMemo(() => {
     if (!logs || logs.length === 0) return [];
 
@@ -164,18 +178,26 @@ const CaretakerDashboard = () => {
         counts[emotion] = (counts[emotion] || 0) + 1;
     });
 
+    // Premium Color Palette for Moods
+    const emotionColors = {
+        happy: "#4ade80",   // Soft Emerald Green
+        anxious: "#fbbf24", // Vibrant Amber Yellow
+        sad: "#60a5fa",     // Clean Sky Blue
+        angry: "#f87171",   // Soft Red
+        unknown: "#94a3b8"  // Slate Gray
+    };
+
     return Object.keys(counts).map(key => ({
-        emotion: key, // x-axis
-        count: counts[key] // bar k height
+        emotion: key.charAt(0).toUpperCase() + key.slice(1), // Capitalize first letter
+        count: counts[key],
+        fillColor: emotionColors[key.toLowerCase()] || "#6366f1" // Custom Color or Default Indigo
     }));
 
   }, [logs]);
 
-  //6.2 Chart configuration
   const chartConfig = {
     count: {
         label: "Interactions",
-        color: "hsl(var(--primary))",
     },
   };
 
@@ -185,7 +207,7 @@ const CaretakerDashboard = () => {
             {/* 🖥️ LEFT PANEL: Main Dashboard Area */}
             <div className="flex-1 flex flex-col p-6 overflow-y-auto">
                 
-                {/* Header & Smart Search Bar Container */}
+                {/* Header Container */}
                 <div className="flex justify-between items-center mb-6">
                     <div>
                         <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
@@ -194,9 +216,8 @@ const CaretakerDashboard = () => {
                         <p className="text-slate-500 mt-1 text-sm">Monitor your patients' emotional well-being.</p>
                     </div>
 
-                    {/* Right-aligned Actions (Search + Logout) */}
+                    {/* Actions (Search + Logout) */}
                     <div className="flex items-center gap-4">
-                        {/* Auto-Suggest Search Bar */}
                         <div className="relative w-80">
                             <input 
                                 type="text" 
@@ -208,15 +229,14 @@ const CaretakerDashboard = () => {
                             />
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                             
-                            {/* Dropdown Menu */}
                             {showDropdown && suggestions.length > 0 && (
                                 <div className="absolute top-full mt-1 w-full bg-white border border-slate-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
                                     {suggestions.map((patient) => (
                                         <div 
                                             key={patient.id}
                                             onClick={() => {
-                                                setSearchQuery(patient.name); // Text box update
-                                                loadPatientData(patient.id, patient.name); // API call ID se
+                                                setSearchQuery(patient.name);
+                                                loadPatientData(patient.id, patient.name);
                                             }}
                                             className="p-3 hover:bg-slate-50 cursor-pointer flex items-center gap-3 border-b border-slate-100 last:border-none"
                                         >
@@ -233,7 +253,6 @@ const CaretakerDashboard = () => {
                             )}
                         </div>
 
-                        {/* 🔴 Logout Button */}
                         <button 
                             onClick={handleLogout}
                             className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors shadow-sm"
@@ -258,13 +277,13 @@ const CaretakerDashboard = () => {
                 ) : (
                     <div className="space-y-6">
                         
-                        {/* 📈 Chart Box */}
+                        {/* 📈 Beautiful Chart Box */}
                         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
                             <h3 className="text-lg font-semibold text-slate-700 mb-4">
                                 Mood Analytics: {selectedPatientName}
                             </h3>
                            {chartData.length > 0 ? (
-                            <ChartContainer config={chartConfig} className="min-h-50 w-full">
+                            <ChartContainer config={chartConfig} className="h-64 w-full">
                                 <BarChart accessibilityLayer data={chartData}>
                                     <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-slate-200" />
                                     <XAxis 
@@ -272,21 +291,25 @@ const CaretakerDashboard = () => {
                                         tickLine={false}
                                         tickMargin={10}
                                         axisLine={false}
-                                        tickFormatter={(value) => value.slice(0,10)} // Lamba naam ho toh cut jayega
+                                        tickFormatter={(value) => value.slice(0,10)}
+                                        className="text-xs font-medium text-slate-600"
                                     />
 
                                     <ChartTooltip content={<ChartTooltipContent />} cursor={{fill: '#f8fafc'}} />
 
-                                    <Bar dataKey="count" fill="var(--color-count)" radius={[4,4,0,0]} />
-                                   
-
+                                    {/* maxBarSize aur Cell injections se columns ekdum premium ho jayenge */}
+                                    <Bar 
+                                        dataKey="count" 
+                                        maxBarSize={40} 
+                                        radius={[6, 6, 0, 0]}
+                                        shape={(props) => <Rectangle {...props} fill={props.payload.fillColor} />}
+                                    />
                                 </BarChart>
                             </ChartContainer>
                            ) : (
                             <div className="h-48 flex items-center justify-center text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-300">
                                 No emotion data available for graph.
                             </div>
-
                            )}
                         </div>
 
@@ -315,8 +338,9 @@ const CaretakerDashboard = () => {
                                         ) : (
                                             logs.map((log) => (
                                                 <tr key={log.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
-                                                    <td className="p-4 whitespace-nowrap text-slate-500">
-                                                        {new Date(log.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                    {/* Time Bug Solved */}
+                                                    <td className="p-4 whitespace-nowrap text-slate-500 font-medium">
+                                                        {formatToLocalTime(log.timestamp)}
                                                     </td>
                                                     <td className="p-4 text-slate-700">{log.user_message}</td>
                                                     <td className="p-4 text-blue-600 bg-blue-50/30">{log.ai_reply}</td>
@@ -365,8 +389,9 @@ const CaretakerDashboard = () => {
                                             Patient: {alert.patient_name}
                                         </p>
                                         <p className="text-xs text-slate-600 mt-1 line-clamp-2">{alert.message}</p>
-                                        <p className="text-[10px] text-slate-400 mt-2">
-                                            {new Date(alert.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                        {/* Notification Time Bug Solved */}
+                                        <p className="text-[10px] text-slate-400 mt-2 font-medium">
+                                            {formatToLocalTime(alert.timestamp)}
                                         </p>
                                     </div>
                                 </div>

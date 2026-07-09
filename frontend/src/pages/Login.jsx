@@ -41,7 +41,7 @@ const Login = () => {
                 localStorage.setItem("role", data.role);
                 localStorage.setItem("isAuthenticated", "true");
 
-                if (userRole === "care_taker"){
+                if (data.role === "care_taker"){
                     navigate("/caretaker-dashboard");
                 } else {
                     navigate("/patient-dashboard");
