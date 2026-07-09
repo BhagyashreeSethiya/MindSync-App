@@ -1,3 +1,4 @@
+from typing import Optional
 from pydantic import BaseModel
 from datetime import datetime
 
@@ -9,7 +10,7 @@ class CaretakerLogResponse(BaseModel):
     ai_reply:str
     emotion:str
     alert:bool
-    patient_name: str
+    patient_name: Optional[str] = None
     timestamp: datetime
 
     class Config:
