@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate} from "react-router-do
 
 //pages imports
 import CaretakerDashboard from "./pages/CaretakerDashboard";
+import Dashboard from "./pages/Dashboard";
 import Login from "./pages/Login"; 
 import Signup  from "./pages/SignUp";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -26,6 +27,16 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/verify-email" element={<VerifyEmail />}/>
             <Route path="/reset-password" element={<ResetPassword />} />
+
+            {/* Protected Route: Sirf Patient k liye */}
+           <Route
+                path="/patient-dashboard"
+                element={
+                    <ProtectedRoute allowedRole="patient">
+                            <Dashboard />
+                    </ProtectedRoute>
+                }
+            />
 
            {/* Protected Route: Sirf Caretaker k liye */}
            <Route
