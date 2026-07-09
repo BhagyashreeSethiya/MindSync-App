@@ -78,4 +78,6 @@ def log_quick_relief(data: QuickReliefRequest, db: Session = Depends(get_db), cu
     db.add(new_log)
     db.commit()
 
+    db.refresh(new_log)
+
     return {"log_id": new_log.id,"message": "Sensory therapy session safely logged for the doctor."}
