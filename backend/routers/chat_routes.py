@@ -53,6 +53,8 @@ def update_chat_feedback(feedback_data: FeedbackRequest, db: Session = Depends(g
     chat_log.skipped_medicine = feedback_data.skipped_medicine
 
     db.commit()
+    db.refresh(chat_log)
+
 
     return {"message": "Feedback safely recorded. Great job!"}
 
