@@ -26,7 +26,18 @@ async def signup(request:Request, user_data: UserCreate,
     #check agr email pehel se exist krta h
     existing_user = db.query(User).filter(User.email == user_data.email).first()
     if existing_user:
-        raise BadRequestException("Email already registered")
+        if existing_user.is_verified:
+            raise BadRequestException("Email already registered and verified. Please login.")
+        else:
+            existing_user.hashed_password = get_password_hash(user_data.password)
+            existing_user.name = user_data.name
+            existing_user.role = user_data.role
+            db.commit()
+
+            verification_token = create_email_verification_token(existing_user.email)
+            background_tasks.add_task(send_verification_email, existing_user.email, existing_user.name, verification_token)
+
+            return {"message": "Unverified account found. A fresh verification link has been sent to your email!"}
     
     #naya user banana (password hash krke)
     hashed_pwd = get_password_hash(user_data.password)
