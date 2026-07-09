@@ -1,6 +1,15 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { Search, Bell, AlertCircle, User as UserIcon, LogOut} from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import {
+    ChartConfig,
+    ChartContainer,
+    ChartTooltip,
+    ChartTooltipContent,
+} from "@/components/ui/chart"
+
+//raw recharts (dhancha bananae k liye)
+import { Bar, BarChart, CartesianGrid, XAxis} from "recharts"
 
 
 const CaretakerDashboard = () => {
@@ -144,6 +153,32 @@ const CaretakerDashboard = () => {
     }
   };
 
+  // 6. Chart 
+  // 6.1 Data Generator
+  const chartData = useMemo(() => {
+    if (!logs || logs.length === 0) return [];
+
+    const counts = {};
+    logs.forEach(log => {
+        const emotion = log.emotion || 'Unknown';
+        counts[emotion] = (counts[emotion] || 0) + 1;
+    });
+
+    return Object.keys(counts).map(key => ({
+        emotion: key, // x-axis
+        count: counts[key] // bar k height
+    }));
+
+  }, [logs]);
+
+  //6.2 Chart configuration
+  const chartConfig = {
+    count: {
+        label: "Interactions",
+        color: "hsl(var(--primary))",
+    },
+  };
+
   return (
         <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
             
@@ -228,9 +263,31 @@ const CaretakerDashboard = () => {
                             <h3 className="text-lg font-semibold text-slate-700 mb-4">
                                 Mood Analytics: {selectedPatientName}
                             </h3>
-                            <div className="h-48 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 border border-dashed border-slate-300">
-                                [Chart Component Area]
+                           {chartData.length > 0 ? (
+                            <ChartContainer config={chartConfig} className="mih-h-[200px] w-full">
+                                <BarChart accessibilityLayer data={chartData}>
+                                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-slate-200" />
+                                    <XAxis 
+                                        dataKey="emotion"
+                                        tickLine={false}
+                                        tickMargin={10}
+                                        axisLine={false}
+                                        tickFormatter={(value) => value.slice(0,10)} // Lamba naam ho toh cut jayega
+                                    />
+
+                                    <ChartTooltip content={<ChartTooltipContent />} cursor={{fill: '#f8fafc'}} />
+
+                                    <Bar dataKey="count" fill="var(--color-count)" radius={[4,4,0,0]} />
+                                   
+
+                                </BarChart>
+                            </ChartContainer>
+                           ) : (
+                            <div className="h-48 flex items-center justify-center text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-300">
+                                No emotion data available for graph.
                             </div>
+
+                           )}
                         </div>
 
                         {/* 📝 Data Table */}
