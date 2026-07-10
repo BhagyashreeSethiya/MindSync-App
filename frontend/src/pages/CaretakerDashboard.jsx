@@ -8,96 +8,96 @@ import {
 } from "@/components/ui/chart";
 import { Bar, BarChart, CartesianGrid, XAxis, Rectangle } from "recharts";
 
-// 🌍 Base URL for easy environment switching
+
 const API_BASE_URL = "http://localhost:8000";
 
 const CaretakerDashboard = () => {
-  const navigate = useNavigate();
+const navigate = useNavigate();
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [suggestions, setSuggestions] = useState([]); 
-  const [showDropdown, setShowDropdown] = useState(false);
+const [searchQuery, setSearchQuery] = useState("");
+const [suggestions, setSuggestions] = useState([]); 
+const [showDropdown, setShowDropdown] = useState(false);
 
-  const [selectedPatientName, setSelectedPatientName] = useState(null);
-  const [logs, setLogs] = useState([]);
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(false);
+const [selectedPatientName, setSelectedPatientName] = useState(null);
+const [logs, setLogs] = useState([]);
+const [notifications, setNotifications] = useState([]);
+const [loading, setLoading] = useState(false);
 
-  const beepSound = useRef(null);
+const beepSound = useRef(null);
 
-  // Initialize audio only once on mount to prevent memory leaks during re-renders
-  useEffect(() => {
+// Initialize audio only once on mount to prevent memory leaks during re-renders
+useEffect(() => {
     beepSound.current = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
-  }, []);
+}, []);
 
-  // Helper: Auth Headers
-  const getAuthHeaders = () => {
+// Helper: Auth Headers
+const getAuthHeaders = () => {
     const token = localStorage.getItem("access_token");
     return {
       "Authorization": `Bearer ${token}`,
       "Content-Type": "application/json"
     };
-  };
+};
 
-  // Helper: UTC time to IST (Local Time)
-  const formatToLocalTime = (timestampString) => {
+// Helper: UTC time to IST (Local Time)
+const formatToLocalTime = (timestampString) => {
     if (!timestampString) return "";
     const safeTimestamp = (typeof timestampString === 'string' && !timestampString.includes('Z') && !timestampString.includes('+'))
-      ? `${timestampString}Z`
-      : timestampString;
+        ? `${timestampString}Z`
+        : timestampString;
 
     return new Date(safeTimestamp).toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true
     });
-  };
+};
 
-  // 1. Auto-Suggest API call (Debounced)
-  useEffect(() => {
+// 1. Auto-Suggest API call (Debounced)
+useEffect(() => {
     const fetchSuggestions = async () => {
-      if (searchQuery.length < 2) {
-        setSuggestions([]);
-        setShowDropdown(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(`${API_BASE_URL}/logs/search-patients?q=${searchQuery}`, {
-            headers: getAuthHeaders()
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            setSuggestions(data);
-            setShowDropdown(true);
+        if (searchQuery.length < 2) {
+            setSuggestions([]);
+            setShowDropdown(false);
+            return;
         }
-      } catch (error) {
-        console.error("Error fetching suggestions:", error);
-      }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/logs/search-patients?q=${searchQuery}`, {
+                headers: getAuthHeaders()
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setSuggestions(data);
+                setShowDropdown(true);
+            }
+        } catch (error) {
+            console.error("Error fetching suggestions:", error);
+        }
     };
 
-    const delay = setTimeout(fetchSuggestions, 300);
-    return () => clearTimeout(delay);
-  }, [searchQuery]);
+        const delay = setTimeout(fetchSuggestions, 300);
+        return () => clearTimeout(delay);
+}, [searchQuery]);
 
-  // 2. HTTP Polling for Notifications
-  useEffect(() => {
+// 2. HTTP Polling for Notifications
+useEffect(() => {
     const pollNotifications = async () => {
-      if (!localStorage.getItem("access_token")) return;
+        if (!localStorage.getItem("access_token")) return;
 
-      try {
-        const response = await fetch(`${API_BASE_URL}/logs/active-alerts`, {
-          headers: getAuthHeaders()
-        });
+            try {
+                const response = await fetch(`${API_BASE_URL}/logs/active-alerts`, {
+                headers: getAuthHeaders()
+             });
 
         if (response.ok) {
-          const newAlerts = await response.json();
-          if (newAlerts.length > 0) {
-            setNotifications((prev) => {
-              if (newAlerts.length > prev.length && beepSound.current) {
-                beepSound.current.play().catch(e => console.log("Sound play blocked by browser:", e));
-              }
+            const newAlerts = await response.json();
+            if (newAlerts.length > 0) {
+                setNotifications((prev) => {
+                    if (newAlerts.length > prev.length && beepSound.current) {
+                    beepSound.current.play().catch(e => console.log("Sound play blocked by browser:", e));
+            }
               return newAlerts;
             });
           }
@@ -105,14 +105,14 @@ const CaretakerDashboard = () => {
       } catch (error) {
         console.error("Failed to fetch alerts:", error);
       }
-    };
+};
 
     const interval = setInterval(pollNotifications, 1000);
     return () => clearInterval(interval);
-  }, []);
+}, []);
 
-  // 3. Load Patient Data (Using ID)
-  const loadPatientData = async (patientId, patientName) => {
+// 3. Load Patient Data (Using ID)
+const loadPatientData = async (patientId, patientName) => {
     if (!patientId) return;
 
     setLoading(true);
@@ -139,13 +139,13 @@ const CaretakerDashboard = () => {
     }
   };
 
-  // 4. Handle Notification Click
-  const handleNotificationClick = (alert) => {
+// 4. Handle Notification Click
+const handleNotificationClick = (alert) => {
     loadPatientData(alert.user_id, alert.patient_name);
-  };
+};
 
-  // 5. Handle Logout Function
-  const handleLogout = async () => {
+// 5. Handle Logout Function
+const handleLogout = async () => {
     const confirmLogout = window.confirm("Are you sure you want to log out?");
     if (!confirmLogout) return;
 
@@ -164,10 +164,10 @@ const CaretakerDashboard = () => {
       localStorage.removeItem("refresh_token");
       navigate("/login");
     }
-  };
+};
 
-  // 6. Chart Data Processor with Dynamic Colors
-  const chartData = useMemo(() => {
+// 6. Chart Data Processor with Dynamic Colors
+const chartData = useMemo(() => {
     if (!logs || logs.length === 0) return [];
 
     const counts = {};
@@ -189,16 +189,16 @@ const CaretakerDashboard = () => {
         count: counts[key],
         fillColor: emotionColors[key.toLowerCase()] || "#6366f1" 
     }));
-  }, [logs]);
+}, [logs]);
 
-  const chartConfig = {
+const chartConfig = {
     count: { label: "Interactions" },
-  };
+};
 
-  return (
+return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
         
-        {/* 🖥️ LEFT PANEL: Main Dashboard Area */}
+        {/* LEFT PANEL: Main Dashboard Area */}
         <div className="flex-1 flex flex-col p-6 overflow-y-auto">
             
             {/* Header Container */}
@@ -269,7 +269,7 @@ const CaretakerDashboard = () => {
             ) : (
                 <div className="space-y-6 pb-10">
                     
-                    {/* 📈 Beautiful Chart Box */}
+                    {/* Beautiful Chart Box */}
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
                         <h3 className="text-lg font-semibold text-slate-700 mb-4">
                             Mood Analytics: {selectedPatientName}
@@ -302,7 +302,7 @@ const CaretakerDashboard = () => {
                         )}
                     </div>
 
-                    {/* 📝 NEW Timeline Data View */}
+                    {/* NEW Timeline Data View */}
                     <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
                         <div className="border-b border-slate-100 pb-4 mb-6">
                             <h3 className="text-lg font-semibold text-slate-700">Interaction Timeline</h3>
@@ -324,7 +324,7 @@ const CaretakerDashboard = () => {
                                         <div key={log.id} className="relative">
                                             
                                             {/* Timeline Bullet Dot */}
-                                            <span className={`absolute -left-[33px] top-1.5 flex h-4 w-4 items-center justify-center rounded-full ring-4 ring-white ${isMedicineLog ? 'bg-amber-400' : (isMusicLog ? 'bg-indigo-500' : 'bg-blue-500')}`} />
+                                            <span className={`absolute -left-8.25 top-1.5 flex h-4 w-4 items-center justify-center rounded-full ring-4 ring-white ${isMedicineLog ? 'bg-amber-400' : (isMusicLog ? 'bg-indigo-500' : 'bg-blue-500')}`} />
 
                                             {/* Main Card Content */}
                                             <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
@@ -341,7 +341,7 @@ const CaretakerDashboard = () => {
 
                                                 {/* Conditional Rendering based on Log Type */}
                                                 {isMedicineLog ? (
-                                                    /* 💊 MEDICINE LOG VIEW */
+                                                    /*  MEDICINE LOG VIEW */
                                                     <div className="flex items-center gap-3 bg-amber-50/50 p-3 rounded-lg border border-amber-100">
                                                         <div className="p-2 bg-white rounded-full shadow-sm">
                                                             <span className="text-xl">💊</span>
@@ -357,7 +357,7 @@ const CaretakerDashboard = () => {
                                                     </div>
 
                                                 ) : isMusicLog ? (
-                                                    /* 🎵 MUSIC LOG VIEW */
+                                                    /* MUSIC LOG VIEW */
                                                     <div className="space-y-2">
                                                         <p className="text-sm font-medium text-slate-800">
                                                             Patient triggered a Sensory Therapy session.
@@ -367,29 +367,29 @@ const CaretakerDashboard = () => {
                                                         </div>
                                                         
                                                         {/* Feedback Section inside Card */}
-                        <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-2 items-center">
-                            <span className="text-xs font-semibold text-slate-500">Feedback:</span>
+                                                    <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-2 items-center">
+                                                        <span className="text-xs font-semibold text-slate-500">Feedback:</span>
     
-                                {log.is_helpful === true && (
-                                    <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-medium">
-                                        🎵 Sound Helped
-                                    </span>
-                                 )}
-                                 {log.is_helpful === false && (
-                                    <span className="px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200 text-xs font-medium">
-                                        🎵 Didn't Calm
-                                    </span>
-                                 )}
-                                {log.is_helpful === null && (
-                                    <span className="px-2 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-200 text-xs font-medium">
-                                        No Feedback
-                                    </span>
-                                 )}
-                        </div>
+                                                            {log.is_helpful === true && (
+                                                                <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-medium">
+                                                                    🎵 Sound Helped
+                                                                </span>
+                                                            )}
+                                                            {log.is_helpful === false && (
+                                                                <span className="px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200 text-xs font-medium">
+                                                                    🎵 Didn't Calm
+                                                                </span>
+                                                            )}
+                                                            {log.is_helpful === null && (
+                                                                <span className="px-2 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-200 text-xs font-medium">
+                                                                     No Feedback
+                                                                </span>
+                                                            )}
+                                                    </div>
                                                         
-                </div>
+                                                </div>
                                                 ) : (
-                                                    /* 💬 CHAT LOG VIEW (Pure Chat/Mind analysis) */
+                                                    /* CHAT LOG VIEW */
                                                     <div className="space-y-3">
                                                         <div className="flex gap-2 items-start">
                                                             <span className="text-xs font-bold text-slate-500 mt-0.5 shrink-0">Patient:</span>
@@ -417,7 +417,7 @@ const CaretakerDashboard = () => {
             )}
         </div>
 
-        {/* 🔔 RIGHT PANEL: Notification Sidebar */}
+        {/* RIGHT PANEL: Notification Sidebar */}
         <div className="w-80 bg-white border-l border-slate-200 shadow-xl flex flex-col z-10">
             <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-red-50/50">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
