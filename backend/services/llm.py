@@ -42,5 +42,6 @@ async def get_ai_response(user_message: str) -> dict:
             "ai_reply":"Oops! Main connect nahi kar paayi. Please try again.",
             "emotion":"neutral",
             "visual_cue": "💙",
-            "is_emergency": False
+            "is_emergency": False,
+            "is_error": True
         } 
