@@ -86,7 +86,8 @@ async def get_patient_mood_history(
             "ai_reply": log.ai_reply,
             "emotion": log.emotion_detected,
             "alert": log.alert_triggered,
-            "timestamp": log.timestamp
+            "timestamp": log.timestamp,
+            "is_helpful": log.is_helpful
         }
         for log in logs
     ]
