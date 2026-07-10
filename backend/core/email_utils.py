@@ -1,6 +1,6 @@
 import resend
 from pydantic import EmailStr
-from config import settings
+from core.config import settings
 
 resend.api_key = settings.RESEND_API_KEY
 
