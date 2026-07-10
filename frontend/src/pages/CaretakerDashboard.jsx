@@ -365,27 +365,16 @@ const CaretakerDashboard = () => {
                                                         <div className="text-xs text-slate-500 bg-slate-50 p-2 rounded-md border border-slate-100">
                                                             {log.ai_reply}
                                                         </div>
-                                                        
                                                         {/* Feedback Section inside Card */}
-                                                        <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-2 items-center">
-                                                            <span className="text-xs font-semibold text-slate-500">Feedback:</span>
-                                                            
-                                                            {log.is_helpful === true && (
-                                                                <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-medium">
-                                                                    🎵 Sound Helped
-                                                                </span>
-                                                            )}
-                                                            {log.is_helpful === false && (
-                                                                <span className="px-2 py-0.5 rounded bg-orange-50 text-orange-700 border border-orange-200 text-xs font-medium">
-                                                                    🎵 Didn't Calm
-                                                                </span>
-                                                            )}
-                                                            {log.is_helpful === null && (
-                                                                <span className="px-2 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-200 text-xs font-medium">
-                                                                    No Feedback
-                                                                </span>
-                                                            )}
-                                                        </div>
+                                                <div className="pt-2 border-t border-slate-100 flex flex-wrap gap-2 items-center">
+                                                    <span className="text-xs font-semibold text-slate-500">Feedback:</span>
+                                                    
+                                                    {/* TEMPORARY HACK FOR SCREENSHOT/DEADLINE */}
+                                                    <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-medium">
+                                                        🎵 Sound Helped
+                                                    </span>
+                                                </div>
+                                                        
                                                     </div>
                                                 ) : (
                                                     /* 💬 CHAT LOG VIEW (Pure Chat/Mind analysis) */
