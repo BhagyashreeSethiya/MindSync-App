@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     REDIS_PORT:int= 6379
 
     RESEND_API_KEY: str
-    EMAIL_FROM: str
+   
     class Config:
         env_file = ".env"
 
