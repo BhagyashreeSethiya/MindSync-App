@@ -11,6 +11,7 @@ class CaretakerLogResponse(BaseModel):
     emotion:str
     alert:bool
     patient_name: Optional[str] = None
+    is_helpful: Optional[bool] = None
     timestamp: datetime
 
     class Config:

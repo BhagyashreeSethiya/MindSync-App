@@ -50,8 +50,7 @@ def update_chat_feedback(feedback_data: FeedbackRequest, db: Session = Depends(g
         raise NotFoundException("Chat log not found")
     
     chat_log.is_helpful = feedback_data.is_helpful
-    chat_log.skipped_medicine = feedback_data.skipped_medicine
-
+    
     db.commit()
     db.refresh(chat_log)
 

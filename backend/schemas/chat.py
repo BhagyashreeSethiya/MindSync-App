@@ -16,7 +16,7 @@ class ChatResponse(BaseModel):
 class FeedbackRequest(BaseModel):
     log_id: int
     is_helpful: bool
-    skipped_medicine: bool
+    
 
 class QuickReliefRequest(BaseModel):
     emotion: str
