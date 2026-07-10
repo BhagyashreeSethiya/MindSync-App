@@ -45,7 +45,7 @@ async def send_password_reset_email(email_to: EmailStr, token: str):
     """
 
     params = {
-        "from" : settings.EMAIL_FROM,
+        "from" : SENDER_EMAIL,
         "to" : [email_to],
         "subject": "Reset Your MindSync Password",
         "html": html_content,
