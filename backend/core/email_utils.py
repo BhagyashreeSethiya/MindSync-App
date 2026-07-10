@@ -1,23 +1,10 @@
-import os
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig, MessageType
+import resend
 from pydantic import EmailStr
-from dotenv import load_dotenv
+from config import settings
 
-#.env file s details load krna
-load_dotenv()
+resend.api_key = settings.RESEND_API_KEY
 
-#Email Server ki Configuration
-conf = ConnectionConfig(
-    MAIL_USERNAME = os.getenv("MAIL_USERNAME"),
-    MAIL_PASSWORD = os.getenv("MAIL_PASSWORD"),
-    MAIL_FROM = os.getenv("MAIL_FROM"),
-    MAIL_PORT = 587,
-    MAIL_SERVER = os.getenv("MAIL_SERVER"),
-    MAIL_STARTTLS = True,
-    MAIL_SSL_TLS = False,
-    USE_CREDENTIALS = True,
-    VALIDATE_CERTS = True
-)
+SENDER_EMAIL = "MindSync <noreply@vmate.space>"
 
 async def send_verification_email(email_to: EmailStr, user_name: str, token:str):
 
@@ -32,17 +19,21 @@ async def send_verification_email(email_to: EmailStr, user_name: str, token:str)
   
 """
     
-    message = MessageSchema(
-        subject = "Welcome to AI Wellness API",
-        recipients = [email_to],
-        body = html_content,
-        subtype = MessageType.html
+    params = {
+        "from": SENDER_EMAIL,
+        "to": [email_to],
+        "subject": "Welcome to MindSync - Verify Your Account",
+        "html" : html_content,
+        "text": f"Please verify your account using this link: {verify_url}"
+    }
 
-    )
-
-    fm = FastMail(conf)
-    await fm.send_message(message)
-    print(f"Email successfully sent to {email_to}")
+    try:
+        email_response = resend.Emails.send(params)
+        print(f"VERIFICATION EMAIL SENT TO: {email_to} |ID: {email_response.get('id')}")
+        return True
+    except Exception as e:
+        print(f"RESEND FAILED for {email_to}: {e}")
+        return False
 
 async def send_password_reset_email(email_to: EmailStr, token: str):
     reset_url = f"http://localhost:5173/reset-password?token={token}"
@@ -53,12 +44,19 @@ async def send_password_reset_email(email_to: EmailStr, token: str):
     <a href = "{reset_url}" style = "background-color: #f44336; color:white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
     """
 
-    message = MessageSchema(
-        subject = "Reset Your Password",
-        recipients=[email_to],
-        body=html_content,
-        subtype=MessageType.html
-    )
+    params = {
+        "from" : settings.EMAIL_FROM,
+        "to" : [email_to],
+        "subject": "Reset Your MindSync Password",
+        "html": html_content,
+        "text": f"Please reset your password using this link: {reset_url}"
+    }
 
-    fm = FastMail(conf)
-    await fm.send_message(message)
+    try:
+        email_response = resend.Emails.send(params)
+        print(f"RESET EMAIL SENT TO: {email_to} | ID: {email_response.get('id')}")
+        return True
+    except Exception as e:
+        print(f"RESEND FAILED for {email_to}: {e}")
+        return False
+              

@@ -12,13 +12,8 @@ class Settings(BaseSettings):
     REDIS_HOST:str ='localhost'
     REDIS_PORT:int= 6379
 
-    MAIL_USERNAME:str
-    MAIL_PASSWORD:str
-    MAIL_FROM:str
-    MAIL_PORT:int
-    MAIL_SERVER:str
-
-
+    RESEND_API_KEY: str
+    EMAIL_FROM: str
     class Config:
         env_file = ".env"
 
