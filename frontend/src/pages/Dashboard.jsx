@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { MessageSquare, Music, LogOut, Sparkles, Activity, Heart, Check, X } from "lucide-react";
 import SpeechInput from "../components/SpeechInput";
 
+const baseUrl = import.meta.env.VITE_API_URL;
+
 
 
 const Dashboard = () => {
@@ -67,7 +69,7 @@ const Dashboard = () => {
 
     try {
       const token = localStorage.getItem("access_token");
-      await fetch("http://localhost:8000/chat", {
+      await fetch(`${baseUrl}/chat`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -94,7 +96,7 @@ const Dashboard = () => {
     try {
 
       const token = localStorage.getItem("access_token");
-      const response = await fetch("http://localhost:8000/chat", {
+      const response = await fetch(`${baseUrl}/chat`, {
 
         method: "POST",
         headers: {
@@ -251,7 +253,7 @@ const Dashboard = () => {
     try {
 
       const token = localStorage.getItem("access_token");
-      const response = await fetch("http://localhost:8000/chat/quick-relief", {
+      const response = await fetch(`${baseUrl}/chat/quick-relief`, {
 
         method: "POST",
         headers: {
@@ -306,7 +308,7 @@ const Dashboard = () => {
     setFeedbackLoading(true);
     try {
       const token = localStorage.getItem("access_token");
-      const response = await fetch("http://localhost:8000/chat/feedback", {
+      const response = await fetch(`${baseUrl}/chat/feedback`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

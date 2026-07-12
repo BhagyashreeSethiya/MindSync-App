@@ -3,6 +3,8 @@ import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+const baseUrl = import.meta.env.VITE_API_URL;
+
 //Memory set (componenet k bahr)
 const processedTokens = new Set();
 
@@ -27,7 +29,7 @@ const VerifyEmail = () => {
 
         const verifyToken = async () => {
             try{
-                const response = await fetch (`http://localhost:8000/auth/verify-email?token=${token}`);
+                const response = await fetch (`${baseUrl}/auth/verify-email?token=${token}`);
                 const data = await response.json();
 
                 if(response.ok){

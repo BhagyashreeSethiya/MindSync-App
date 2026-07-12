@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
+const baseUrl = import.meta.env.VITE_API_URL;
+
+
 const Signup = () => {
     const[formData, setFormData] = useState({ name: "", email: "", password: "", role: "patient"});
     const [showPassword, setShowPassword] = useState(false);
@@ -34,7 +37,7 @@ const Signup = () => {
         setMessage({ type: "", text: ""});
 
         try{
-            const response = await fetch("http://localhost:8000/auth/signup", {
+            const response = await fetch(`${baseUrl}/auth/signup`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(formData),

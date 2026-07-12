@@ -8,6 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
+const baseUrl = import.meta.env.VITE_API_URL;
+
+
 const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -24,7 +27,7 @@ const Login = () => {
         setLoading(true);
 
         try{
-            const response = await fetch("http://localhost:8000/auth/login",{
+            const response = await fetch(`${baseUrl}/auth/login`,{
                 method: "POST",
                 headers: {
                     "Content-Type":"application/json",

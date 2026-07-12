@@ -2,6 +2,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import SpeechInput from "../components/SpeechInput";
 
+const baseUrl = import.meta.env.VITE_API_URL;
+
+
 const Home = () => {
   const [messages, setMessages] = useState([]);
   const [isThinking, setIsThinking] = useState(false);
@@ -26,7 +29,7 @@ const Home = () => {
 
       const token = localStorage.getItem("access_token");
 
-      const response = await fetch("http://localhost:8000/chat", {
+      const response = await fetch(`${baseUrl}/chat`, {
 
         method: "POST",
 

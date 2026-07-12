@@ -4,6 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
+const baseUrl = import.meta.env.VITE_API_URL;
+
+
 const ForgotPassword = () => {
     const [email, setEmail] = useState("");
     const [loading, setLoading] = useState(false);
@@ -22,7 +25,7 @@ const ForgotPassword = () => {
         setMessage({ type: "", text: ""});
 
         try{
-            const response = await fetch("http://localhost:8000/auth/forgot-password", {
+            const response = await fetch(`${baseUrl}/auth/forgot-password`, {
                 method: "POST",
                 headers: { "Content-Type" : "application/json"},
                 body: JSON.stringify({ email: targetEmail}),
