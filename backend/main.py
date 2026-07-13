@@ -56,7 +56,7 @@ app.add_middleware(SlowAPIMiddleware)
 #4.CORS: React (port 5173) ko FastAPI (port 8000) se baat krne k permission dena
 app.add_middleware(
     CORSMiddleware,
-    allow_origins = ["http://localhost:5173"],
+    allow_origins = ["https://mind-sync-app.vercel.app","http://localhost:5173","http://localhost:3000" ],
     allow_credentials = True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -65,7 +65,7 @@ app.add_middleware(
 #5. Trusted Host: Security Gate (outer Layer - Sabse pehle chalega)
 app.add_middleware(
     TrustedHostMiddleware,
-    allowed_hosts=["localhost", "127.0.0.1"]
+    allowed_hosts=["localhost", "127.0.0.1", "mind-sync-app.vercel.app", "*.choreoapis.dev"]
 )
 
 #routers inclusion
