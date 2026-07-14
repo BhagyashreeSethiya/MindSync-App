@@ -8,7 +8,7 @@ SENDER_EMAIL = "MindSync <noreply@vmate.space>"
 
 async def send_verification_email(email_to: EmailStr, user_name: str, token:str):
 
-    verify_url = f"http://localhost:5173/verify-email?token={token}"
+    verify_url = f"{settings.FRONTEND_URL}/verify-email?token={token}"
     
     html_content = f"""
     <h2>Hello {user_name},</h2>
@@ -36,7 +36,9 @@ async def send_verification_email(email_to: EmailStr, user_name: str, token:str)
         return False
 
 async def send_password_reset_email(email_to: EmailStr, token: str):
-    reset_url = f"http://localhost:5173/reset-password?token={token}"
+    
+    
+    reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
 
     html_content = f"""
     <h2>Password Reset Request</h2>

@@ -4,7 +4,7 @@ class Settings(BaseSettings):
     GEMINI_API_KEY:str
     SECRET_KEY: str
     DATABASE_URL: str 
-    # FRONTEND_URL: str = "http://localhost:5173"
+    FRONTEND_URL: str = "http://localhost:5173"
 
     
     ALGORITHM: str = "HS256" 
