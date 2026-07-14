@@ -63,10 +63,10 @@ app.add_middleware(
 )
 
 #5. Trusted Host: Security Gate (outer Layer - Sabse pehle chalega)
-app.add_middleware(
-    TrustedHostMiddleware,
-    allowed_hosts=["localhost", "127.0.0.1", "mind-sync-app.vercel.app", "*.choreoapis.dev"]
-)
+#app.add_middleware(
+  #  TrustedHostMiddleware,
+   # allowed_hosts=["localhost", "127.0.0.1", "mind-sync-app.vercel.app", "*.choreoapis.dev"]
+#)
 
 #routers inclusion
 app.include_router(auth.router)
