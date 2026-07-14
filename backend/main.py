@@ -7,6 +7,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 #Custom core modules
+from core.config import settings
 from core.middlewares import LoggingMiddleware, RequestIDMiddleware, SimpleASGIMiddleware
 from core.exceptions import AppException
 from core.exception_handlers import app_exception_handler, generic_exception_handler
@@ -56,7 +57,7 @@ app.add_middleware(SlowAPIMiddleware)
 #4.CORS: React (port 5173) ko FastAPI (port 8000) se baat krne k permission dena
 app.add_middleware(
     CORSMiddleware,
-    allow_origins = ["https://mind-sync-app.vercel.app","http://localhost:5173","http://localhost:3000" ],
+    allow_origins = settings.CORS_ORIGINS,
     allow_credentials = True,
     allow_methods=["*"],
     allow_headers=["*"],

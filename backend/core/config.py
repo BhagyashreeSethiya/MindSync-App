@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     DATABASE_URL: str 
     FRONTEND_URL: str = "http://localhost:5173"
+    CORS_ORIGINS: list[str] = ["http://localhost:5173"]
 
     
     ALGORITHM: str = "HS256" 
