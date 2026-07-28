@@ -18,7 +18,10 @@ class UserCreate(BaseModel):
     email:EmailStr
     password:str
     role:str = "patient"
-    invite_code: Optional[str] = None
+    invite_token: Optional[str] = None
+
+class SendInviteRequest(BaseModel):
+    patient_email: EmailStr
 
 class UserResponse(BaseModel):
     id:int
