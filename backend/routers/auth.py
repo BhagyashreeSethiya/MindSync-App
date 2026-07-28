@@ -1,28 +1,53 @@
 import time
+import secrets
 from fastapi import APIRouter, Depends, HTTPException, status, Request, BackgroundTasks
 from fastapi.security import HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
+
 from core.dependencies import get_db
+
 from models.user import User
-from schemas.user import UserCreate, UserResponse
+from models.patient_invite import PatientInvite
+from schemas.user import UserCreate, UserResponse, SendInviteRequest
 from schemas.auth import LoginRequest, RefreshRequest, LogoutRequest, ForgotPasswordRequest, ResetPasswordRequest
-from core.security import get_password_hash, verify_password, create_access_token, create_refresh_token
+from core.security import get_password_hash, verify_password, create_access_token, create_refresh_token, create_email_verification_token, verify_email_token
 from core.config import settings
 from core.dependencies import security
 from core.redis_client import store_refresh_jti, is_refresh_jti_valid, revoke_refresh_jti, blacklist_access_jti
 from core.limiter import limiter
-from core.email_utils import send_verification_email, send_password_reset_email
-from core.security import create_email_verification_token, verify_email_token
+from core.email_utils import send_verification_email, send_password_reset_email,send_invite_email
 
 from core.exceptions import BadRequestException, UnauthorizedException, NotFoundException
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
+#Allowlisted Doctor/Caretaker Emails
+AUTHORIZED_CARETAKER_EMAILS = [
+    "bhagyashreesethiya@gmail.com",
+]
+
 @router.post("/signup")
 @limiter.limit("5/minute")
 async def signup(request:Request, user_data: UserCreate, 
                  background_tasks: BackgroundTasks,db:Session = Depends(get_db)):
+    # Caretaker security check (Allowlist)
+    if user_data.role == "caretaker" and user_data.email.lower() not in [e.lower() for e in AUTHORIZED_CARETAKER_EMAILS]:("You are not authorized to register as a Caretaker/Doctor.")
+
+    #token based patient invite processing
+    assigned_caretaker_id = None
+    if user_data.invite_token:
+        invite = db.query(PatientInvite).filter(
+            PatientInvite.token == user_data.invite_token,
+            PatientInvite.is_used == False
+        ).first()
+
+    if not invite:
+        raise BadRequestException("Invalid or expired invitation token.")
+
+    assigned_caretaker_id = invite.caretaker_id
+    user_data.role = "patient" #Force role to patient if singning up via invite link
+
     #check agr email pehel se exist krta h
     existing_user = db.query(User).filter(User.email == user_data.email).first()
     if existing_user:
@@ -32,6 +57,7 @@ async def signup(request:Request, user_data: UserCreate,
             existing_user.hashed_password = get_password_hash(user_data.password)
             existing_user.name = user_data.name
             existing_user.role = user_data.role
+            existing_user.caretaker_id = assigned_caretaker_id or existing_user.caretaker_id
             db.commit()
 
             verification_token = create_email_verification_token(existing_user.email)
@@ -46,9 +72,15 @@ async def signup(request:Request, user_data: UserCreate,
         email=user_data.email,
         hashed_password=hashed_pwd,
         role=user_data.role
+        caretaker_id=assigned_caretaker_id
     )
 
     db.add(new_user)
+
+    #mark invite as used if token was present
+    if user_data.invite_token and invite:
+        invite.is_used = True
+
     db.commit()
     db.refresh(new_user)
 
@@ -57,6 +89,46 @@ async def signup(request:Request, user_data: UserCreate,
     background_tasks.add_task(send_verification_email, user_data.email, user_data.name, verification_token)
 
     return {"message" : "Registration successful! Please check your email to verify your account."}
+
+
+@router.post("/send-invite")
+def send_patient_invite(
+    invite_data: SendInviteRequest,
+    background_tasks: BackgroundTasks,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: Session = Depends(get_db)
+):
+    # Authenticate caretaker
+    token = credentials.credentials
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        user_id = payload.get("sub")
+        role = payload.get("role")
+        if not user_id or role != "caretaker":
+            raise UnauthorizedException("Only caretakers can send patient invitations.")
+    except JWTError:
+        raise UnauthorizedException("Invalid authorization token")
+
+    #Generate unique secure token
+    invite_token = secrets.token_urlsafe(32)
+
+    #store invite in DB 
+    new_invite = PatientInvite(
+        email = invite_data.patient_email,
+        token=invite_token,
+        caretaker_id = int (user_id)
+    )
+    db.add(new_invite)
+    db.commit()
+
+    invite_link = f"http://localhost:5173/signup?invite_token={invite_token}"
+
+    background_tasks.add_task(send_invite_email, invite_data.patient_email, invite_link)
+
+    return {
+        "message": f"Invitation link generated and sent to {invite_data.patient_email}",
+        
+    }
 
 @router.get("/verify-email")
 def verify_email(token:str, db: Session = Depends(get_db)):
