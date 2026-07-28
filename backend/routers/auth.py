@@ -71,7 +71,7 @@ async def signup(request:Request, user_data: UserCreate,
         name=user_data.name,
         email=user_data.email,
         hashed_password=hashed_pwd,
-        role=user_data.role
+        role=user_data.role,
         caretaker_id=assigned_caretaker_id
     )
 
