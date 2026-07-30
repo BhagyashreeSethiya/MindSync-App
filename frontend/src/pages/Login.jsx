@@ -10,11 +10,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const baseUrl = import.meta.env.VITE_API_URL;
 
-
 const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-     const [role, setRole] = useState("patient");
+    const [role, setRole] = useState("patient");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -22,47 +21,73 @@ const Login = () => {
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
-        e.preventDefault();//Form ko refresh hone s rokne k liye
+        e.preventDefault();
         setError("");
         setLoading(true);
 
-        try{
-            const response = await fetch(`${baseUrl}/auth/login`,{
+        try {
+            // 🚨 Wapas JSON format par aa gaye hain
+            const response = await fetch(`${baseUrl}/auth/login`, {
                 method: "POST",
                 headers: {
-                    "Content-Type":"application/json",
+                    "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ email, password, role}),
+                body: JSON.stringify({ email, password, role }), // JSON data
             });
 
             const data = await response.json();
 
-            if(response.ok) {
+            if (response.ok) {
                 localStorage.setItem("access_token", data.access_token);
-                if(data.refresh_token)localStorage.setItem("refresh_token", data.refresh_token);
+                if (data.refresh_token) localStorage.setItem("refresh_token", data.refresh_token);
 
                 localStorage.setItem("role", data.role);
                 localStorage.setItem("isAuthenticated", "true");
 
-                if (data.role === "caretaker"){
+                const urlParams = new URLSearchParams(window.location.search);
+                const inviteToken = urlParams.get("invite_token");
+
+                if (inviteToken && data.role === "patient") {
+                    try {
+                        await fetch(`${baseUrl}/accept-invite`, {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Authorization": `Bearer ${data.access_token}`
+                            },
+                            body: JSON.stringify({ token: inviteToken }),
+                        });
+                        console.log("Successfully linked to doctor!");
+                    } catch (linkError) {
+                        console.error("Link fail ho gaya:", linkError);
+                    }
+                }
+
+                if (data.role === "caretaker") {
                     navigate("/caretaker-dashboard");
                 } else {
                     navigate("/patient-dashboard");
                 }
             } else {
-                setError(data.detail || "Login failed!" );
+                // 🚨 FIX: Safe Error Handling taaki React crash na ho
+                let errorMessage = "Login failed!";
+                if (typeof data.detail === "string") {
+                    errorMessage = data.detail;
+                } else if (Array.isArray(data.detail)) {
+                    errorMessage = data.detail[0].msg; // Agar object aaye toh uski string nikal lo
+                }
+                
+                setError(errorMessage);
             }
         } catch (err) {
             console.error("Login Error", err);
             setError("Server se connect nahi ho paya. Backend chalu hai?");
-        }finally{
+        } finally {
             setLoading(false);
         }
-
     };
-        
+    
     return (
-        
         <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
             <Card className="w-full max-w-md shadow-xl border-slate-200 bg-white">
                 <CardHeader className="text-center pb-4">
@@ -71,7 +96,8 @@ const Login = () => {
                 </CardHeader>
 
                 <CardContent>
-                    <form onSubmit={handleLogin} className="space-y-5">
+                    {/* 🚨 FIX: autoComplete="off" laga diya taaki pehle se data bhara hua na aaye */}
+                    <form onSubmit={handleLogin} className="space-y-5" autoComplete="off">
                         
                         {/* Email field */}
                         <div className="space-y-2">
@@ -82,6 +108,7 @@ const Login = () => {
                                 placeholder="Enter your email address"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
+                                autoComplete="off"
                                 required
                             />
                         </div>
@@ -96,6 +123,7 @@ const Login = () => {
                                     placeholder="Enter your password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
+                                    autoComplete="new-password" // Ye strict browsers ko autofill karne se rokta hai
                                     required
                                     className="pr-10"
                                 />

@@ -14,6 +14,8 @@ const Signup = () => {
     const [searchParams] = useSearchParams();
     const inviteToken = searchParams.get("invite_token");
 
+    const navigate = useNavigate();
+
     // Agar token hai, toh default role 'patient' hi rahega
     const [formData, setFormData] = useState({ 
         name: "", 
@@ -63,6 +65,20 @@ const Signup = () => {
                 setMessage({ type: "success", text: `Success: ${data.message || "Please check your email to verify."}` });
                 setFormData({name: "", email: "", password: "", role: "patient"});
             } else {
+                const errorMsg = data.detail || data.error || "";
+                
+                if (errorMsg.toLowerCase().includes("already registered")) {
+                    alert("Aapka account pehle se bana hua hai! Invite accept karne ke liye Login karein.");
+                    
+                    // Token ke sath seedha Login page par bhejo
+                    if (inviteToken) {
+                        navigate(`/login?invite_token=${inviteToken}`);
+                    } else {
+                        navigate("/login");
+                    }
+                    return; // Yahin ruk jao
+                }
+                
                 setMessage({ type: "error", text: `Failed: ${data.detail || "Signup failed!"}`});
             }
         } catch (err) {
