@@ -181,7 +181,7 @@ const handleLogout = async () => {
             const response = await fetch(`${API_BASE_URL}/auth/send-invite`, {
                 method: "POST",
                 headers: getAuthHeaders(),
-                body: JSON.stringify({ email: inviteEmail }),
+                body: JSON.stringify({ patient_email: inviteEmail }),
             });
 
             const data = await response.json();
