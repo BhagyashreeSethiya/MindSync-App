@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
-import { Search, Bell, AlertCircle, User as UserIcon, LogOut, Inbox } from "lucide-react";
+import { Search, Bell, AlertCircle, User as UserIcon, LogOut, Inbox, UserPlus, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
     ChartContainer,
@@ -23,11 +23,15 @@ const [logs, setLogs] = useState([]);
 const [notifications, setNotifications] = useState([]);
 const [loading, setLoading] = useState(false);
 
+const [showInviteModal, setShowInviteModal] = useState(false);
+const [inviteEmail, setInviteEmail] = useState("");
+const [inviteStatus, setInviteStatus] = useState({ loading: false, message: "", type: "" });
+
 const beepSound = useRef(null);
 
 // Initialize audio only once on mount to prevent memory leaks during re-renders
 useEffect(() => {
-    beepSound.current = new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg');
+    beepSound.current = new Audio('/sounds/beep_short.ogg');
 }, []);
 
 // Helper: Auth Headers
@@ -166,7 +170,38 @@ const handleLogout = async () => {
     }
 };
 
-// 6. Chart Data Processor with Dynamic Colors
+// --- 6. NEW: Handle Send Invite ---
+    const handleSendInvite = async (e) => {
+        e.preventDefault();
+        if (!inviteEmail.trim()) return;
+
+        setInviteStatus({ loading: true, message: "", type: "" });
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/auth/send-invite`, {
+                method: "POST",
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ email: inviteEmail }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                setInviteStatus({ loading: false, message: data.message || "Invite sent successfully!", type: "success" });
+                // 2 seconds baad modal close kar do
+                setTimeout(() => {
+                    setShowInviteModal(false);
+                    setInviteEmail("");
+                    setInviteStatus({ loading: false, message: "", type: "" });
+                }, 2000);
+            } else {
+                setInviteStatus({ loading: false, message: data.detail || "Failed to send invite.", type: "error" });
+            }
+        } catch (error) {
+            setInviteStatus({ loading: false, message: "Server error. Try again later.", type: "error" });
+        }
+    };
+
 const chartData = useMemo(() => {
     if (!logs || logs.length === 0) return [];
 
@@ -196,7 +231,7 @@ const chartConfig = {
 };
 
 return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
+    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans relative">
         
         {/* LEFT PANEL: Main Dashboard Area */}
         <div className="flex-1 flex flex-col p-6 overflow-y-auto">
@@ -210,7 +245,7 @@ return (
                     <p className="text-slate-500 mt-1 text-sm">Monitor your patients' emotional well-being.</p>
                 </div>
 
-                {/* Actions (Search + Logout) */}
+                {/* Actions (Search + Invite + Logout) */}
                 <div className="flex items-center gap-4">
                     <div className="relative w-80">
                         <input 
@@ -244,6 +279,15 @@ return (
                             </div>
                         )}
                     </div>
+
+                    <button 
+                            onClick={() => setShowInviteModal(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 border border-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                            title="Invite Patient"
+                        >
+                            <UserPlus size={18} />
+                            <span className="font-semibold text-sm">Invite Patient</span>
+                        </button>
 
                     <button 
                         onClick={handleLogout}
@@ -456,9 +500,86 @@ return (
                 )}
             </div>
         </div>
+        
+        {/* NEW: Invite Modal Overlay */}
+            {showInviteModal && (
+                <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 relative animate-in fade-in zoom-in duration-200">
+                        {/* Close button */}
+                        <button 
+                            onClick={() => {
+                                setShowInviteModal(false);
+                                setInviteStatus({ loading: false, message: "", type: "" });
+                            }}
+                            className="absolute top-4 right-4 text-slate-400 hover:text-slate-700 transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
 
-    </div>
-  );
+                        <div className="mb-6">
+                            <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                <UserPlus className="text-blue-600" size={24} />
+                                Invite Patient
+                            </h3>
+                            <p className="text-sm text-slate-500 mt-1">
+                                Send an invitation link to a patient to join your care network.
+                            </p>
+                        </div>
+
+                        {/* Status Message */}
+                        {inviteStatus.message && (
+                            <div className={`p-3 rounded-md mb-4 text-sm font-medium ${inviteStatus.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                                {inviteStatus.message}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSendInvite} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                    Patient Email Address
+                                </label>
+                                <input 
+                                    type="email" 
+                                    required
+                                    placeholder="patient@example.com"
+                                    value={inviteEmail}
+                                    onChange={(e) => setInviteEmail(e.target.value)}
+                                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    disabled={inviteStatus.loading}
+                                />
+                            </div>
+                            
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button 
+                                    type="button" 
+                                    onClick={() => setShowInviteModal(false)}
+                                    className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                                    disabled={inviteStatus.loading}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    type="submit" 
+                                    disabled={inviteStatus.loading || !inviteEmail.trim()}
+                                    className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                                >
+                                    {inviteStatus.loading ? (
+                                        <>
+                                            <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></span>
+                                            Sending...
+                                        </>
+                                    ) : (
+                                        "Send Invite"
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 };
 
 export default CaretakerDashboard;
+    
