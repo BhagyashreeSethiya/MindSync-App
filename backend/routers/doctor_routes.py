@@ -15,7 +15,7 @@ router = APIRouter(
 
 #1. History wala endpoint (charts and Tables k liye)
 @router.get("/history", response_model=List[CaretakerLogResponse])
-async def get_mood_history(db: Session = Depends(get_db), current_user: User = Depends(require_role("care_taker"))):
+async def get_mood_history(db: Session = Depends(get_db), current_user: User = Depends(require_role("caretaker"))):
     #Databse s saare logs nikalne(latest wale sabse upar)
     logs = db.query(MoodLog).order_by(MoodLog.timestamp.desc()).all()
 
@@ -38,7 +38,7 @@ async def get_mood_history(db: Session = Depends(get_db), current_user: User = D
 #2. HTTP Polling endpoint (Active alerts k liye)
 #React Dashboard ise har 10 seconds m hit krega
 @router.get("/active-alerts", response_model=List[CaretakerAlertResponse])
-async def get_active_alerts(db:Session = Depends(get_db), current_user: User = Depends(require_role("care_taker"))):
+async def get_active_alerts(db:Session = Depends(get_db), current_user: User = Depends(require_role("caretaker"))):
    
     alerts = db.query(MoodLog).filter(
        
@@ -62,7 +62,7 @@ async def get_active_alerts(db:Session = Depends(get_db), current_user: User = D
 async def get_patient_mood_history(
     patient_id:int, #URL s patient ka name aajega
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("care_taker"))
+    current_user: User = Depends(require_role("caretaker"))
 ):
     
     patient = db.query(User).filter(User.id == patient_id, User.role == "patient").first()
@@ -97,7 +97,7 @@ async def get_patient_mood_history(
 async def search_patients(
     q:str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("care_taker"))
+    current_user: User = Depends(require_role("caretaker"))
 ):
     if not q or len(q) < 2:
         return [] #Agar 2 letter s kam type kiya h toh kuch mat bhejo
