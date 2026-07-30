@@ -9,7 +9,7 @@ from core.dependencies import get_db
 
 from models.user import User
 from models.patient_invite import PatientInvite
-from schemas.user import UserCreate, UserResponse, SendInviteRequest
+from schemas.user import UserCreate, UserResponse, SendInviteRequest, AcceptInviteRequest
 from schemas.auth import LoginRequest, RefreshRequest, LogoutRequest, ForgotPasswordRequest, ResetPasswordRequest
 from core.security import get_password_hash, verify_password, create_access_token, create_refresh_token, create_email_verification_token, verify_email_token
 from core.config import settings
@@ -29,35 +29,52 @@ AUTHORIZED_CARETAKER_EMAILS = [
 
 @router.post("/signup")
 @limiter.limit("5/minute")
-async def signup(request:Request, user_data: UserCreate, 
-                 background_tasks: BackgroundTasks,db:Session = Depends(get_db)):
-    # Caretaker security check (Allowlist)
-    if user_data.role == "caretaker" and user_data.email.lower() not in [e.lower() for e in AUTHORIZED_CARETAKER_EMAILS]:("You are not authorized to register as a Caretaker/Doctor.")
+async def signup(
+    request: Request, 
+    user_data: UserCreate, 
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    # Email clean & lowercase standardisation
+    clean_email = user_data.email.lower().strip()
 
-    #token based patient invite processing
+    # 1. Caretaker security check (Allowlist)
+    if user_data.role == "caretaker" and clean_email not in [e.lower() for e in AUTHORIZED_CARETAKER_EMAILS]:
+        raise BadRequestException("You are not authorized to register as a Caretaker/Doctor.")
+
+    # 2. Token based patient invite processing
     assigned_caretaker_id = None
+    invite = None
+
     if user_data.invite_token:
         invite = db.query(PatientInvite).filter(
             PatientInvite.token == user_data.invite_token,
             PatientInvite.is_used == False
         ).first()
 
-    if not invite:
-        raise BadRequestException("Invalid or expired invitation token.")
+        # FIXED: Ab ye check SIRF tab chalega jab invite_token diya gaya ho
+        if not invite:
+            raise BadRequestException("Invalid or expired invitation token.")
 
-    assigned_caretaker_id = invite.caretaker_id
-    user_data.role = "patient" #Force role to patient if singning up via invite link
+        assigned_caretaker_id = invite.caretaker_id
+        user_data.role = "patient" # Force role to patient if signing up via invite link
 
-    #check agr email pehel se exist krta h
-    existing_user = db.query(User).filter(User.email == user_data.email).first()
+    # 3. Check if email already exists
+    existing_user = db.query(User).filter(User.email == clean_email).first()
     if existing_user:
         if existing_user.is_verified:
             raise BadRequestException("Email already registered and verified. Please login.")
         else:
+            # Unverified account updates
             existing_user.hashed_password = get_password_hash(user_data.password)
             existing_user.name = user_data.name
             existing_user.role = user_data.role
-            existing_user.caretaker_id = assigned_caretaker_id or existing_user.caretaker_id
+            if assigned_caretaker_id:
+                existing_user.caretaker_id = assigned_caretaker_id
+            
+            if invite:
+                invite.is_used = True
+
             db.commit()
 
             verification_token = create_email_verification_token(existing_user.email)
@@ -65,11 +82,11 @@ async def signup(request:Request, user_data: UserCreate,
 
             return {"message": "Unverified account found. A fresh verification link has been sent to your email!"}
     
-    #naya user banana (password hash krke)
+    # 4. Naya user create karna
     hashed_pwd = get_password_hash(user_data.password)
     new_user = User(
         name=user_data.name,
-        email=user_data.email,
+        email=clean_email,
         hashed_password=hashed_pwd,
         role=user_data.role,
         caretaker_id=assigned_caretaker_id
@@ -77,18 +94,17 @@ async def signup(request:Request, user_data: UserCreate,
 
     db.add(new_user)
 
-    #mark invite as used if token was present
-    if user_data.invite_token and invite:
+    # Mark invite as used if token was present
+    if invite:
         invite.is_used = True
 
     db.commit()
     db.refresh(new_user)
 
-    verification_token = create_email_verification_token(user_data.email)
+    verification_token = create_email_verification_token(clean_email)
+    background_tasks.add_task(send_verification_email, clean_email, user_data.name, verification_token)
 
-    background_tasks.add_task(send_verification_email, user_data.email, user_data.name, verification_token)
-
-    return {"message" : "Registration successful! Please check your email to verify your account."}
+    return {"message": "Registration successful! Please check your email to verify your account."}
 
 
 @router.post("/send-invite")
@@ -129,6 +145,32 @@ def send_patient_invite(
         "message": f"Invitation link generated and sent to {invite_data.patient_email}",
         
     }
+
+@router.post("/accept-invite")
+def accept_invite(request: AcceptInviteRequest, db: Session = Depends(get_db)):
+    # 1. Invite token find karo database mein
+    invite = db.query(PatientInvite).filter(
+        PatientInvite.token == request.token, 
+        PatientInvite.is_used == False
+    ).first()
+    
+    if not invite:
+        raise HTTPException(status_code=400, detail="Invalid or expired invite token.")
+
+    # 2. Patient ko email se find karo (kyunki email toh invite table mein hai hi)
+    patient = db.query(User).filter(User.email == invite.email).first()
+    
+    if not patient:
+        raise HTTPException(status_code=404, detail="Patient account not found. Pehle sign up karein.")
+
+    # 3. Patient ko Caretaker assign karo aur invite ko 'used' mark kardo
+    patient.caretaker_id = invite.caretaker_id
+    invite.is_used = True
+    
+    # 4. Changes save karo
+    db.commit()
+
+    return {"success": True, "message": "Successfully linked with Doctor!"}
 
 @router.get("/verify-email")
 def verify_email(token:str, db: Session = Depends(get_db)):
