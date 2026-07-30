@@ -23,6 +23,9 @@ class UserCreate(BaseModel):
 class SendInviteRequest(BaseModel):
     patient_email: EmailStr
 
+class AcceptInviteRequest(BaseModel):
+    token: str
+
 class UserResponse(BaseModel):
     id:int
     name: str
