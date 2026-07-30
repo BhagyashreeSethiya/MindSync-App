@@ -32,7 +32,7 @@ const Login = () => {
                 headers: {
                     "Content-Type":"application/json",
                 },
-                body: JSON.stringify({ email, password}),
+                body: JSON.stringify({ email, password, role}),
             });
 
             const data = await response.json();
@@ -44,7 +44,7 @@ const Login = () => {
                 localStorage.setItem("role", data.role);
                 localStorage.setItem("isAuthenticated", "true");
 
-                if (data.role === "care_taker"){
+                if (data.role === "caretaker"){
                     navigate("/caretaker-dashboard");
                 } else {
                     navigate("/patient-dashboard");
