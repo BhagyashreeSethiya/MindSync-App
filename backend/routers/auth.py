@@ -137,7 +137,7 @@ def send_patient_invite(
     db.add(new_invite)
     db.commit()
 
-    invite_link = f"http://localhost:5173/signup?invite_token={invite_token}"
+    invite_link = f"{settings.FRONTEND_URL}/signup?invite_token={invite_token}"
 
     background_tasks.add_task(send_invite_email, invite_data.patient_email, invite_link)
 
