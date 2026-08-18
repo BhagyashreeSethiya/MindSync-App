@@ -69,7 +69,7 @@ const Dashboard = () => {
 
     try {
       const token = localStorage.getItem("access_token");
-      await fetch(`${baseUrl}/chat`, {
+      await fetch(`${baseUrl}/chat/`, {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
@@ -96,7 +96,7 @@ const Dashboard = () => {
     try {
 
       const token = localStorage.getItem("access_token");
-      const response = await fetch(`${baseUrl}/chat`, {
+      const response = await fetch(`${baseUrl}/chat/`, {
 
         method: "POST",
         headers: {
