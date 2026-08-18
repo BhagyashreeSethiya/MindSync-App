@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import SpeechInput from "../components/SpeechInput";
 
-const baseUrl = import.meta.env.VITE_API_URL;
+const baseUrl = (import.meta.env.VITE_API_URL || "").replace(/\/$/, "");
 
 
 const Home = () => {
