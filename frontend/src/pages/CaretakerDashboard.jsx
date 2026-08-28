@@ -51,6 +51,8 @@ const formatToLocalTime = (timestampString) => {
         : timestampString;
 
     return new Date(safeTimestamp).toLocaleTimeString('en-US', {
+        month: 'short',
+        day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
       hour12: true
