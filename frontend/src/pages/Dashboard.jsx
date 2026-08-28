@@ -138,6 +138,9 @@ const Dashboard = () => {
 
 
   const handleLogout = () => {
+    // Browser native confirmation popup
+    const isConfirmed = window.confirm("Are you sure you want to log out?");
+    if (!isConfirmed) return;
 
     window.speechSynthesis.cancel();
     if (audioRef.current) audioRef.current.pause();
