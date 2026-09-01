@@ -31,7 +31,7 @@ const beepSound = useRef(null);
 
 // Initialize audio only once on mount to prevent memory leaks during re-renders
 useEffect(() => {
-    beepSound.current = new Audio('/sounds/beep_short.ogg');
+    beepSound.current = new Audio('/audio/beep_short.mp3');
 }, []);
 
 // Helper: Auth Headers
@@ -98,22 +98,30 @@ useEffect(() => {
              });
 
         if (response.ok) {
-            const newAlerts = await response.json();
-            if (newAlerts.length > 0) {
+            const fetchedAlerts = await response.json();
+    
                 setNotifications((prev) => {
-                    if (newAlerts.length > prev.length && beepSound.current) {
+                    // Identify new alerts by ID
+                    const prevIds = new Set(prev.map(alert => alert.id));
+                    const hasNewAlert = fetchedAlerts.some(alert => !prevIds.has(alert.id));
+
+                    if (hasNewAlert && beepSound.current) {
                     beepSound.current.play().catch(e => console.log("Sound play blocked by browser:", e));
             }
-              return newAlerts;
+
+            // return previous state to prevent useless DOM re-renders if nothing changed
+            if(!hasNewAlert && fetchedAlerts.length === prev.length) return prev;
+
+              return fetchedAlerts;
             });
           }
-        }
+        
       } catch (error) {
         console.error("Failed to fetch alerts:", error);
       }
 };
 
-    const interval = setInterval(pollNotifications, 1000);
+    const interval = setInterval(pollNotifications, 5000);
     return () => clearInterval(interval);
 }, []);
 
@@ -146,8 +154,22 @@ const loadPatientData = async (patientId, patientName) => {
   };
 
 // 4. Handle Notification Click
-const handleNotificationClick = (alert) => {
+const handleNotificationClick = async (alert) => {
+    // Patient ka log screen par show karein
     loadPatientData(alert.user_id, alert.patient_name);
+
+    // UI se notification ko instant remove karein
+    setNotifications((prev) => prev.filter((item) => item.id !== alert.id));
+
+    // Backend DB me alert_triggered = False set karne ke liye PATCH call karein
+    try {
+        await fetch(`${API_BASE_URL}/logs/alerts/${alert.id}/resolve`, {
+            method: "PATCH",
+            headers: getAuthHeaders()
+        });
+    } catch (error) {
+        console.error("Failed to mark alert as resolved:", error);
+    }
 };
 
 // 5. Handle Logout Function
