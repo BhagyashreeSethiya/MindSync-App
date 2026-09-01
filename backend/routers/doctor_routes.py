@@ -5,6 +5,7 @@ from models.user import User
 from models.mood_logs import MoodLog
 from schemas.log import CaretakerAlertResponse, CaretakerLogResponse
 from typing import List
+from fastapi import HTTPException, status
 
 from core.exceptions import NotFoundException
 
@@ -117,5 +118,15 @@ async def search_patients(
         for p in patients
     ]
 
-
-
+@router.patch("/alerts/{alert_id}/resolve")
+async def resolve_alert(alert_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_role("caretaker"))):
+    alert = db.query(MoodLog).filter(MoodLog.id == alert_id).first()
+    
+    if not alert:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found")
+        
+    # Alert status ko False mark karein taaki active alerts me na aaye
+    alert.alert_triggered = False
+    db.commit()
+    
+    return {"message": "Alert resolved successfully"}
